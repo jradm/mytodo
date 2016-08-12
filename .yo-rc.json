@@ -15,8 +15,8 @@
       },
       "skip-cache": false,
       "skip-install": false,
-      "sample": "techs",
-      "router": "router"
+      "sample": "todoMVC",
+      "router": "none"
     }
   }
 }
