@@ -1,183 +1,119 @@
-import 'zone.js/dist/zone';
-import 'zone.js/dist/async-test';
-import 'zone.js/dist/fake-async-test';
-import {Component, Input} from '@angular/core';
-import {async, inject, TestComponentBuilder} from '@angular/core/testing';
-import {By} from '@angular/platform-browser';
-import {TodoTextInput} from './TodoTextInput';
-import {TodoItem} from './TodoItem';
+import React from 'react';
+import TestUtils from 'react-addons-test-utils';
+import TodoItem from './TodoItem';
+import TodoTextInput from './TodoTextInput';
 
-@Component({
-  selector: 'TodoTextInput',
-  template: ''
-})
-class MockTodoTextInput {
-  @Input() newTodo;
-  @Input() editing;
-  @Input() placeholder;
-  @Input() text;
+function setup(editing = false) {
+  const props = {
+    todo: {
+      id: 0,
+      text: 'Use Redux',
+      completed: false
+    },
+    editTodo: jasmine.createSpy(),
+    deleteTodo: jasmine.createSpy(),
+    completeTodo: jasmine.createSpy()
+  };
+
+  const renderer = TestUtils.createRenderer();
+
+  renderer.render(
+    <TodoItem {...props}/>
+  );
+
+  let output = renderer.getRenderOutput();
+
+  if (editing) {
+    const label = output.props.children.props.children[1];
+    label.props.onDoubleClick({});
+    output = renderer.getRenderOutput();
+  }
+
+  return {
+    props,
+    output,
+    renderer
+  };
 }
 
 describe('components', () => {
-  let tcb;
-
-  beforeEach(inject([TestComponentBuilder], _tcb => {
-    tcb = _tcb;
-  }));
-
   describe('TodoItem', () => {
-    it('should render the correct elements', async(inject([], () => {
-      tcb
-        .overrideDirective(TodoItem, TodoTextInput, MockTodoTextInput)
-        .createAsync(TodoItem)
-        .then(fixture => {
-          const TodoItemCmp = fixture.componentInstance;
-          TodoItemCmp.todo = {
-            id: 0,
-            text: 'Use ngrx/store',
-            completed: false
-          };
-          fixture.detectChanges();
-          const todoItem = fixture.nativeElement;
-          const li = todoItem.querySelector('li');
-          expect(li).not.toBeNull();
-          expect(li.className).toBe('');
-          const div = todoItem.querySelector('div');
-          expect(div).not.toBeNull();
-          expect(div.className).toBe('view');
-          const input = todoItem.querySelector('input');
-          expect(input).not.toBeNull();
-          expect(input.checked).toBe(false);
-          const label = todoItem.querySelector('label');
-          expect(label).not.toBeNull();
-          expect(label.textContent.trim()).toBe('Use ngrx/store');
-          const button = todoItem.querySelector('button');
-          expect(button).not.toBeNull();
-          expect(button.className).toBe('destroy');
-        });
-    })));
+    it('initial render', () => {
+      const {output} = setup();
 
-    it('should call onChange when click on input', async(inject([], () => {
-      tcb
-        .overrideDirective(TodoItem, TodoTextInput, MockTodoTextInput)
-        .createAsync(TodoItem)
-        .then(fixture => {
-          fixture.detectChanges();
-          const TodoItemCmp = fixture.componentInstance;
-          TodoItemCmp.todo = {
-            id: 0,
-            text: 'Use ngrx/store',
-            completed: false
-          };
-          const input = fixture.nativeElement.querySelector('input');
-          spyOn(TodoItemCmp.onChange, 'emit');
-          const evt = new CustomEvent('click');
-          input.dispatchEvent(evt);
-          expect(TodoItemCmp.onChange.emit).toHaveBeenCalledWith(0);
-        });
-    })));
+      expect(output.type).toBe('li');
+      expect(output.props.className).toBe('');
 
-    it('should call onDestroy when click on button', async(inject([], () => {
-      tcb
-        .overrideDirective(TodoItem, TodoTextInput, MockTodoTextInput)
-        .createAsync(TodoItem)
-        .then(fixture => {
-          fixture.detectChanges();
-          const TodoItemCmp = fixture.componentInstance;
-          TodoItemCmp.todo = {
-            id: 0,
-            text: 'Use ngrx/store',
-            completed: false
-          };
-          const button = fixture.nativeElement.querySelector('button');
-          spyOn(TodoItemCmp.onDestroy, 'emit').and.callThrough();
-          const evt = new CustomEvent('click');
-          button.dispatchEvent(evt);
-          expect(TodoItemCmp.onDestroy.emit).toHaveBeenCalledWith(0);
-        });
-    })));
+      const div = output.props.children;
 
-    it(`should change class names to 'editing' when double click on label`, async(inject([], () => {
-      tcb
-        .overrideDirective(TodoItem, TodoTextInput, MockTodoTextInput)
-        .createAsync(TodoItem)
-        .then(fixture => {
-          fixture.detectChanges();
-          const TodoItemCmp = fixture.componentInstance;
-          TodoItemCmp.todo = {
-            id: 0,
-            text: 'Use ngrx/store',
-            completed: false
-          };
-          const label = fixture.nativeElement.querySelector('label');
-          spyOn(TodoItemCmp.onDestroy, 'emit').and.callThrough();
-          const evt = new CustomEvent('dblclick');
-          label.dispatchEvent(evt);
-          fixture.detectChanges();
-          const li = fixture.nativeElement.querySelector('li');
-          expect(li.className).toBe('editing');
-        });
-    })));
+      expect(div.type).toBe('div');
+      expect(div.props.className).toBe('view');
 
-    it('should render the correct input when editing is true', async(inject([], () => {
-      tcb
-        .createAsync(TodoItem)
-        .then(fixture => {
-          const TodoItemCmp = fixture.componentInstance;
-          TodoItemCmp.editing = true;
-          TodoItemCmp.todo = {
-            id: 0,
-            text: 'Use ngrx/store',
-            completed: false
-          };
-          fixture.detectChanges();
-          const todoTextInput = fixture.debugElement.query(By.css('todotextinput')).componentInstance;
-          expect(todoTextInput).not.toBeNull();
-          expect(todoTextInput.text).toBe('Use ngrx/store');
-          expect(todoTextInput.editing).toBe(true);
-        });
-    })));
+      const [input, label, button] = div.props.children;
 
-    it('should call handleSave when onSave event is emitted', async(inject([], () => {
-      tcb
-        .createAsync(TodoItem)
-        .then(fixture => {
-          const TodoItemCmp = fixture.componentInstance;
-          TodoItemCmp.todo = {
-            id: 0,
-            text: 'Use ngrx/store',
-            completed: false
-          };
-          TodoItemCmp.editing = true;
-          fixture.detectChanges();
-          spyOn(TodoItemCmp.onSave, 'emit');
-          const todoTextInput = fixture.debugElement.query(By.css('todotextinput')).componentInstance;
-          spyOn(todoTextInput.onSave, 'emit').and.callThrough();
-          spyOn(TodoItemCmp, 'handleSave');
-          fixture.detectChanges();
-          todoTextInput.onSave.emit('Edit todo');
-          expect(TodoItemCmp.handleSave).toHaveBeenCalledWith('Edit todo');
-        });
-    })));
+      expect(input.type).toBe('input');
+      expect(input.props.checked).toBe(false);
 
-    it('should remove class name when onSave event is emitted', async(inject([], () => {
-      tcb
-        .createAsync(TodoItem)
-        .then(fixture => {
-          const TodoItemCmp = fixture.componentInstance;
-          TodoItemCmp.editing = true;
-          fixture.detectChanges();
-          spyOn(TodoItemCmp.onSave, 'emit');
-          const todoTextInput = fixture.debugElement.query(By.css('todotextinput')).componentInstance;
-          spyOn(todoTextInput.onSave, 'emit').and.callThrough();
-          spyOn(TodoItemCmp, 'handleSave').and.callFake(() => { // eslint-disable-line max-nested-callbacks
-            TodoItemCmp.editing = false;
-          });
-          todoTextInput.onSave.emit('Use ngrx/store');
-          fixture.detectChanges();
-          const li = fixture.nativeElement.querySelector('li');
-          expect(li.className).toBe('');
-        });
-    })));
+      expect(label.type).toBe('label');
+      expect(label.props.children).toBe('Use Redux');
+
+      expect(button.type).toBe('button');
+      expect(button.props.className).toBe('destroy');
+    });
+
+    it('input onChange should call completeTodo', () => {
+      const {output, props} = setup();
+      const input = output.props.children.props.children[0];
+      input.props.onChange({});
+      expect(props.completeTodo).toHaveBeenCalledWith(0);
+    });
+
+    it('button onClick should call deleteTodo', () => {
+      const {output, props} = setup();
+      const button = output.props.children.props.children[2];
+      button.props.onClick({});
+      expect(props.deleteTodo).toHaveBeenCalledWith(0);
+    });
+
+    it('label onDoubleClick should put component in edit state', () => {
+      const {output, renderer} = setup();
+      const label = output.props.children.props.children[1];
+      label.props.onDoubleClick({});
+      const updated = renderer.getRenderOutput();
+      expect(updated.type).toBe('li');
+      expect(updated.props.className).toBe('editing');
+    });
+
+    it('edit state render', () => {
+      const {output} = setup(true);
+
+      expect(output.type).toBe('li');
+      expect(output.props.className).toBe('editing');
+
+      const input = output.props.children;
+      expect(input.type).toBe(TodoTextInput);
+      expect(input.props.text).toBe('Use Redux');
+      expect(input.props.editing).toBe(true);
+    });
+
+    it('TodoTextInput onSave should call editTodo', () => {
+      const {output, props} = setup(true);
+      output.props.children.props.onSave('Use Redux');
+      expect(props.editTodo).toHaveBeenCalledWith(0, 'Use Redux');
+    });
+
+    it('TodoTextInput onSave should call deleteTodo if text is empty', () => {
+      const {output, props} = setup(true);
+      output.props.children.props.onSave('');
+      expect(props.deleteTodo).toHaveBeenCalledWith(0);
+    });
+
+    it('TodoTextInput onSave should exit component from edit state', () => {
+      const {output, renderer} = setup(true);
+      output.props.children.props.onSave('Use Redux');
+      const updated = renderer.getRenderOutput();
+      expect(updated.type).toBe('li');
+      expect(updated.props.className).toBe('');
+    });
   });
 });

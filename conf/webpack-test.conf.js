@@ -23,12 +23,6 @@ module.exports = {
         ]
       },
       {
-        test: /.html$/,
-        loaders: [
-          'html'
-        ]
-      },
-      {
         test: /\.js$/,
         exclude: /(node_modules|.*\.spec\.js)/,
         loader: 'isparta'
@@ -37,5 +31,9 @@ module.exports = {
   },
   plugins: [],
   debug: true,
-  devtool: 'cheap-module-eval-source-map'
+  devtool: 'cheap-module-eval-source-map',
+  externals: {
+    'react/lib/ExecutionEnvironment': true,
+    'react/lib/ReactContext': true
+  }
 };

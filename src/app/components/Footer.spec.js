@@ -1,84 +1,101 @@
-import 'zone.js/dist/zone';
-import 'zone.js/dist/async-test';
-import 'zone.js/dist/fake-async-test';
-import {Footer} from './Footer';
-import {async, inject, TestComponentBuilder} from '@angular/core/testing';
-import {SHOW_ACTIVE} from '../constants/TodoFilters';
+import React from 'react';
+import TestUtils from 'react-addons-test-utils';
+import Footer from './Footer';
+import {SHOW_ALL, SHOW_ACTIVE} from '../constants/TodoFilters';
+
+function setup(propOverrides) {
+  const props = Object.assign({
+    completedCount: 0,
+    activeCount: 0,
+    filter: SHOW_ALL,
+    onClearCompleted: jasmine.createSpy(),
+    onShow: jasmine.createSpy()
+  }, propOverrides);
+
+  const renderer = TestUtils.createRenderer();
+  renderer.render(<Footer {...props}/>);
+  const output = renderer.getRenderOutput();
+
+  return {
+    props,
+    output
+  };
+}
+
+function getTextContent(elem) {
+  const children = Array.isArray(elem.props.children) ?
+    elem.props.children : [elem.props.children];
+
+  return children.reduce((out, child) => {
+    // Children are either elements or text strings
+    return out + (child.props ? getTextContent(child) : child);
+  }, '');
+}
 
 describe('components', () => {
-  let tcb;
-
-  beforeEach(inject([TestComponentBuilder], _tcb => {
-    tcb = _tcb;
-  }));
-
   describe('Footer', () => {
-    it('should render \'Test\'', async(inject([], () => {
-      tcb.createAsync(Footer)
-        .then(fixture => {
-          fixture.detectChanges();
-          const footer = fixture.nativeElement;
-          expect(footer.querySelector('footer')).not.toBeNull();
-          expect(footer.querySelector('footer').className).toBe('footer');
-        });
-    })));
+    it('should render container', () => {
+      const {output} = setup();
+      expect(output.type).toBe('footer');
+      expect(output.props.className).toBe('footer');
+    });
 
-    it('should display active count when 0', async(inject([], () => {
-      tcb.createAsync(Footer)
-        .then(fixture => {
-          const footer = fixture.nativeElement;
-          const FooterCmp = fixture.componentInstance;
-          FooterCmp.activeCount = 0;
-          fixture.detectChanges();
-          expect(footer.querySelector('.todo-count').textContent.trim()).toBe('No items left');
-        });
-    })));
+    it('should display active count when 0', () => {
+      const {output} = setup({activeCount: 0});
+      const [count] = output.props.children;
+      expect(getTextContent(count)).toBe('No items left');
+    });
 
-    it('should display active count when above 0', async(inject([], () => {
-      tcb.createAsync(Footer)
-        .then(fixture => {
-          const footer = fixture.nativeElement;
-          const FooterCmp = fixture.componentInstance;
-          FooterCmp.activeCount = 1;
-          fixture.detectChanges();
-          expect(footer.querySelector('.todo-count').textContent.trim()).toBe('1 item left');
-        });
-    })));
+    it('should display active count when above 0', () => {
+      const {output} = setup({activeCount: 1});
+      const [count] = output.props.children;
+      expect(getTextContent(count)).toBe('1 item left');
+    });
 
-    it('should call onShow when a filter is clicked', async(inject([], () => {
-      tcb.createAsync(Footer)
-        .then(fixture => {
-          const footer = fixture.nativeElement;
-          const FooterCmp = fixture.componentInstance;
-          fixture.detectChanges();
-          spyOn(FooterCmp.onShow, 'emit');
-          footer.querySelectorAll('a')[1].dispatchEvent(new Event('click'));
-          expect(FooterCmp.onShow.emit).toHaveBeenCalledWith(SHOW_ACTIVE);
-        });
-    })));
+    it('should render filters', () => {
+      const {output} = setup();
+      const [, filters] = output.props.children;
+      expect(filters.type).toBe('ul');
+      expect(filters.props.className).toBe('filters');
+      expect(filters.props.children.length).toBe(3);
+      filters.props.children.forEach((filter, i) => {
+        expect(filter.type).toBe('li');
+        const a = filter.props.children;
+        expect(a.props.className).toBe(i === 0 ? 'selected' : '');
+        expect(a.props.children).toBe({
+          0: 'All',
+          1: 'Active',
+          2: 'Completed'
+        }[i]);
+      });
+    });
 
-    it('shouldnt show clear button when no completed todos', async(inject([], () => {
-      tcb.createAsync(Footer)
-        .then(fixture => {
-          const footer = fixture.nativeElement;
-          const FooterCmp = fixture.componentInstance;
-          FooterCmp.completedCount = 0;
-          fixture.detectChanges();
-          expect(footer.querySelector('.clear-completed')).toBeNull();
-        });
-    })));
+    it('should call onShow when a filter is clicked', () => {
+      const {output, props} = setup();
+      const [, filters] = output.props.children;
+      const filterLink = filters.props.children[1].props.children;
+      filterLink.props.onClick({});
+      expect(props.onShow).toHaveBeenCalledWith(SHOW_ACTIVE);
+    });
 
-    it('should call onClearCompleted on clear button click', async(inject([], () => {
-      tcb.createAsync(Footer)
-        .then(fixture => {
-          const footer = fixture.nativeElement;
-          const FooterCmp = fixture.componentInstance;
-          FooterCmp.completedCount = 1;
-          fixture.detectChanges();
-          spyOn(FooterCmp.onClearCompleted, 'emit');
-          footer.querySelector('.clear-completed').dispatchEvent(new Event('click'));
-          expect(FooterCmp.onClearCompleted.emit).toHaveBeenCalled();
-        });
-    })));
+    it('shouldnt show clear button when no completed todos', () => {
+      const {output} = setup({completedCount: 0});
+      const [, , clear] = output.props.children;
+      expect(clear).toBe(undefined);
+    });
+
+    it('should render clear button when completed todos', () => {
+      const {output} = setup({completedCount: 1});
+      const [, , clear] = output.props.children;
+      expect(clear.type).toBe('button');
+      expect(clear.props.children).toBe('Clear completed');
+    });
+
+    it('should call onClearCompleted on clear button click', () => {
+      const {output, props} = setup({completedCount: 1});
+      const [, , clear] = output.props.children;
+      clear.props.onClick({});
+      expect(props.onClearCompleted).toHaveBeenCalled();
+    });
   });
 });

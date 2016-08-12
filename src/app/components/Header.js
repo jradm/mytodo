@@ -1,25 +1,34 @@
-import {Component} from '@angular/core';
-import {Store} from '@ngrx/store';
-import * as actions from '../actions/index';
-import {TodoTextInput} from './TodoTextInput';
+import React, {PropTypes, Component} from 'react';
+import TodoTextInput from './TodoTextInput';
 
-@Component({
-  selector: 'Header',
-  template: require('./Header.html'),
-  directives: [TodoTextInput]
-})
-export class Header {
-  constructor(store) {
-    this.store = store;
-  }
-
-  static get parameters() {
-    return [[Store]];
+class Header extends Component {
+  constructor(props) {
+    super(props);
+    this.handleSave = this.handleSave.bind(this);
   }
 
   handleSave(text) {
     if (text.length !== 0) {
-      this.store.dispatch(actions.addTodo(text));
+      this.props.addTodo(text);
     }
   }
+
+  render() {
+    return (
+      <header className="header">
+        <h1>todos</h1>
+        <TodoTextInput
+          newTodo
+          onSave={this.handleSave}
+          placeholder="What needs to be done?"
+          />
+      </header>
+    );
+  }
 }
+
+Header.propTypes = {
+  addTodo: PropTypes.func.isRequired
+};
+
+export default Header;

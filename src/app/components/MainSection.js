@@ -1,54 +1,98 @@
-import {Component} from '@angular/core';
-import {Store} from '@ngrx/store';
-import {TodoItem} from './TodoItem';
-import {Observable} from 'rxjs/Rx';
-import {Footer} from './Footer';
-import * as actions from '../actions/index';
+import React, {Component, PropTypes} from 'react';
+import TodoItem from './TodoItem';
+import Footer from './Footer';
+import {SHOW_ALL, SHOW_COMPLETED, SHOW_ACTIVE} from '../constants/TodoFilters';
 
-@Component({
-  selector: 'MainSection',
-  template: require('./MainSection.html'),
-  directives: [TodoItem, Footer]
-})
-export class MainSection {
-  constructor(store) {
-    this.store = store;
-    this.filteredTodos = Observable.combineLatest(store.select('todos'), store.select('visibility'), (todos, visibilityFilter) => todos.filter(visibilityFilter.filter));
-    this.todos = store.select('todos');
-    this.visibilityFilter = store.select('visibility');
-    this.completedCount = this.todos.map(todos => todos.reduce((count, todo) => todo.completed ? count + 1 : count, 0));
-    this.activeCount = this.todos.map(todos => todos.length - (todos.reduce((count, todo) => todo.completed ? count + 1 : count, 0)));
-  }
+const TODO_FILTERS = {
+  [SHOW_ALL]: () => true,
+  [SHOW_ACTIVE]: todo => !todo.completed,
+  [SHOW_COMPLETED]: todo => todo.completed
+};
 
-  static get parameters() {
-    return [[Store]];
+class MainSection extends Component {
+  constructor(props, context) {
+    super(props, context);
+    this.state = {filter: SHOW_ALL};
+    this.handleClearCompleted = this.handleClearCompleted.bind(this);
+    this.handleShow = this.handleShow.bind(this);
+    this.handleCompleteAll = this.handleCompleteAll.bind(this);
   }
 
   handleClearCompleted() {
-    this.store.dispatch(actions.clearCompleted());
+    this.props.actions.clearCompleted();
   }
 
   handleCompleteAll() {
-    this.store.dispatch(actions.completeAll());
+    this.props.actions.completeAll();
   }
 
   handleShow(filter) {
-    this.store.dispatch(actions.changeVisibility(filter));
+    this.setState({filter});
   }
 
-  handleChange(id) {
-    this.store.dispatch(actions.completeTodo(id));
-  }
-
-  handleSave(e) {
-    if (e.text.length === 0) {
-      this.store.dispatch(actions.deleteTodo(e.id));
-    } else {
-      this.store.dispatch(actions.editTodo(e.id, e.text));
+  renderToggleAll(completedCount) {
+    const {todos} = this.props;
+    if (todos.length > 0) {
+      return (
+        <input
+          className="toggle-all"
+          type="checkbox"
+          checked={completedCount === todos.length}
+          onChange={this.handleCompleteAll}
+          />
+      );
     }
   }
 
-  handleDestroy(e) {
-    this.store.dispatch(actions.deleteTodo(e));
+  renderFooter(completedCount) {
+    const {todos} = this.props;
+    const {filter} = this.state;
+    const activeCount = todos.length - completedCount;
+
+    if (todos.length) {
+      return (
+        <Footer
+          completedCount={completedCount}
+          activeCount={activeCount}
+          filter={filter}
+          onClearCompleted={this.handleClearCompleted}
+          onShow={this.handleShow}
+          />
+      );
+    }
+  }
+
+  render() {
+    const {todos, actions} = this.props;
+    const {filter} = this.state;
+
+    const filteredTodos = todos.filter(TODO_FILTERS[filter]);
+    const completedCount = todos.reduce((count, todo) =>
+      todo.completed ? count + 1 : count,
+      0
+    );
+
+    return (
+      <section className="main">
+        {this.renderToggleAll(completedCount)}
+        <ul className="todo-list">
+          {filteredTodos.map(todo =>
+            <TodoItem
+              key={todo.id}
+              todo={todo}
+              {...actions}
+              />
+          )}
+        </ul>
+        {this.renderFooter(completedCount)}
+      </section>
+    );
   }
 }
+
+MainSection.propTypes = {
+  todos: PropTypes.array.isRequired,
+  actions: PropTypes.object.isRequired
+};
+
+export default MainSection;
