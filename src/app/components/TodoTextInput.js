@@ -1,41 +1,63 @@
-import {Component, Input, Output, EventEmitter, ViewChild, Renderer} from '@angular/core';
+import React, {Component, PropTypes} from 'react';
+import classnames from 'classnames';
 
-@Component({
-  selector: 'TodoTextInput',
-  template: require('./TodoTextInput.html')
-})
-export class TodoTextInput {
-  @ViewChild('myInput') input;
-  @Input() newTodo;
-  @Input() editing;
-  @Input() placeholder = '';
-  @Output() onSave = new EventEmitter(false);
-  @Input() text = '';
-
-  constructor(renderer) {
-    this.renderer = renderer;
-  }
-
-  static get parameters() {
-    return [[Renderer]];
-  }
-
-  ngAfterViewInit() {
-    this.renderer.invokeElementMethod(this.input.nativeElement, 'focus', []);
-  }
-
-  handleBlur() {
-    if (!this.newTodo) {
-      this.onSave.emit(this.text);
-    }
+class TodoTextInput extends Component {
+  constructor(props, context) {
+    super(props, context);
+    this.state = {
+      text: this.props.text || ''
+    };
+    this.handleBlur = this.handleBlur.bind(this);
+    this.handleChange = this.handleChange.bind(this);
+    this.handleSubmit = this.handleSubmit.bind(this);
   }
 
   handleSubmit(e) {
-    if (e.keyCode === 13) {
-      this.onSave.emit(this.text);
-      if (this.newTodo) {
-        this.text = '';
+    const text = e.target.value.trim();
+    if (e.which === 13) {
+      this.props.onSave(text);
+      if (this.props.newTodo) {
+        this.setState({text: ''});
       }
     }
   }
+
+  handleChange(e) {
+    this.setState({text: e.target.value});
+  }
+
+  handleBlur(e) {
+    if (!this.props.newTodo) {
+      this.props.onSave(e.target.value);
+    }
+  }
+
+  render() {
+    return (
+      <input
+        className={
+          classnames({
+            'edit': this.props.editing,
+            'new-todo': this.props.newTodo
+          })}
+        type="text"
+        placeholder={this.props.placeholder}
+        autoFocus="true"
+        value={this.state.text}
+        onBlur={this.handleBlur}
+        onChange={this.handleChange}
+        onKeyDown={this.handleSubmit}
+        />
+    );
+  }
 }
+
+TodoTextInput.propTypes = {
+  onSave: PropTypes.func.isRequired,
+  text: PropTypes.string,
+  placeholder: PropTypes.string,
+  editing: PropTypes.bool,
+  newTodo: PropTypes.bool
+};
+
+export default TodoTextInput;

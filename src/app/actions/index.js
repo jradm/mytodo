@@ -23,7 +23,3 @@ export function completeAll() {
 export function clearCompleted() {
   return {type: types.CLEAR_COMPLETED};
 }
-
-export function changeVisibility(filter) {
-  return {type: filter};
-}

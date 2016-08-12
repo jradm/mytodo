@@ -25,20 +25,14 @@ module.exports = {
         ]
       },
       {
-        test: /\.css$/,
-        loaders: ExtractTextPlugin.extract('style', 'css?minimize!', 'postcss')
+        test: /\.(css|scss)$/,
+        loaders: ExtractTextPlugin.extract('style', 'css?minimize!sass', 'postcss')
       },
       {
         test: /\.js$/,
         exclude: /node_modules/,
         loaders: [
           'babel'
-        ]
-      },
-      {
-        test: /.html$/,
-        loaders: [
-          'html'
         ]
       }
     ]

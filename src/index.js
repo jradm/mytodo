@@ -1,20 +1,18 @@
-import 'reflect-metadata';
-import 'zone.js/dist/zone';
-import {bootstrap} from '@angular/platform-browser-dynamic';
+import 'babel-polyfill';
+
+import React from 'react';
+import {render} from 'react-dom';
+import {Provider} from 'react-redux';
+import App from './app/containers/App';
+import configureStore from './app/store/configureStore';
+
 import 'todomvc-app-css/index.css';
-import {provideStore, combineReducers} from '@ngrx/store';
 
-import {todos, visibility, initialTodo, initialVisibility} from './app/reducers/todos';
+const store = configureStore();
 
-import './index.css';
-
-import {App} from './app/containers/App';
-import {enableProdMode} from '@angular/core';
-
-if (process.env.NODE_ENV === 'production') {
-  enableProdMode();
-}
-
-bootstrap(App, [
-  provideStore(combineReducers({todos, visibility}), {todos: [initialTodo], visibility: initialVisibility})
-]);
+render(
+  <Provider store={store}>
+    <App/>
+  </Provider>,
+  document.getElementById('root')
+);

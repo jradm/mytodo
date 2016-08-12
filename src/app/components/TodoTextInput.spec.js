@@ -1,119 +1,82 @@
-import 'zone.js/dist/zone';
-import 'zone.js/dist/async-test';
-import 'zone.js/dist/fake-async-test';
-import {async, inject, TestComponentBuilder} from '@angular/core/testing';
-import {TodoTextInput} from './TodoTextInput';
+import React from 'react';
+import TestUtils from 'react-addons-test-utils';
+import TodoTextInput from './TodoTextInput';
+
+function setup(propOverrides) {
+  const props = Object.assign({
+    onSave: jasmine.createSpy(),
+    text: 'Use Redux',
+    placeholder: 'What needs to be done?',
+    editing: false,
+    newTodo: false
+  }, propOverrides);
+
+  const renderer = TestUtils.createRenderer();
+
+  renderer.render(
+    <TodoTextInput {...props}/>
+  );
+
+  let output = renderer.getRenderOutput();
+
+  output = renderer.getRenderOutput();
+
+  return {
+    props,
+    output,
+    renderer
+  };
+}
 
 describe('components', () => {
-  let tcb;
-
-  beforeEach(inject([TestComponentBuilder], _tcb => {
-    tcb = _tcb;
-  }));
-
   describe('TodoTextInput', () => {
-    it('should render correctly', async(inject([], () => {
-      tcb
-        .createAsync(TodoTextInput)
-        .then(fixture => {
-          const TodoTextInputCmp = fixture.componentInstance;
-          TodoTextInputCmp.text = 'Use ngrx/store';
-          TodoTextInputCmp.placeholder = 'What needs to be done?';
-          TodoTextInputCmp.editing = false;
-          TodoTextInputCmp.newTodo = false;
-          fixture.detectChanges();
-          const input = fixture.nativeElement.querySelector('input');
-          expect(input).not.toBeNull();
-          expect(input.placeholder).toBe('What needs to be done?');
-          expect(input.value).toBe('Use ngrx/store');
-          expect(input.className).not.toContain('edit');
-          expect(input.className).not.toContain('new-todo');
-        });
-    })));
+    it('should render correctly', () => {
+      const {output} = setup();
+      expect(output.props.placeholder).toEqual('What needs to be done?');
+      expect(output.props.value).toEqual('Use Redux');
+      expect(output.props.className).toEqual('');
+    });
 
-    it('should render correctly when editing=true', async(inject([], () => {
-      tcb
-        .createAsync(TodoTextInput)
-        .then(fixture => {
-          const TodoTextInputCmp = fixture.componentInstance;
-          TodoTextInputCmp.editing = true;
-          fixture.detectChanges();
-          const input = fixture.nativeElement.querySelector('input');
-          expect(input).not.toBeNull();
-          expect(input.className).toContain('edit');
-        });
-    })));
+    it('should render correctly when editing=true', () => {
+      const {output} = setup({editing: true});
+      expect(output.props.className).toEqual('edit');
+    });
 
-    it('should render correctly when newTodo=true', async(inject([], () => {
-      tcb
-        .createAsync(TodoTextInput)
-        .then(fixture => {
-          const TodoTextInputCmp = fixture.componentInstance;
-          TodoTextInputCmp.newTodo = true;
-          fixture.detectChanges();
-          const input = fixture.nativeElement.querySelector('input');
-          expect(input).not.toBeNull();
-          expect(input.className).toContain('new-todo');
-        });
-    })));
+    it('should render correctly when newTodo=true', () => {
+      const {output} = setup({newTodo: true});
+      expect(output.props.className).toEqual('new-todo');
+    });
 
-    it('should update value on change', async(inject([], () => {
-      tcb
-        .createAsync(TodoTextInput)
-        .then(fixture => {
-          const TodoTextInputCmp = fixture.componentInstance;
-          TodoTextInputCmp.editing = true;
-          fixture.detectChanges();
-          const input = fixture.nativeElement.querySelector('input');
-          expect(input).not.toBeNull();
-          input.value = 'Use ngrx/store';
-          const evt = new CustomEvent('input');
-          input.dispatchEvent(evt);
-          expect(TodoTextInputCmp.text).toBe('Use ngrx/store');
-        });
-    })));
+    it('should update value on change', () => {
+      const {output, renderer} = setup();
+      output.props.onChange({target: {value: 'Use Radox'}});
+      const updated = renderer.getRenderOutput();
+      expect(updated.props.value).toEqual('Use Radox');
+    });
 
-    it('should call onSave on handleSubmit', async(inject([], () => {
-      tcb
-        .createAsync(TodoTextInput)
-        .then(fixture => {
-          fixture.detectChanges();
-          const TodoTextInputCmp = fixture.componentInstance;
-          TodoTextInputCmp.text = 'Use ngrx/store';
-          spyOn(TodoTextInputCmp.onSave, 'emit').and.callThrough();
-          TodoTextInputCmp.handleSubmit({keyCode: 13});
-          expect(TodoTextInputCmp.onSave.emit).toHaveBeenCalledWith('Use ngrx/store');
-        });
-    })));
+    it('should call onSave on return key press', () => {
+      const {output, props} = setup();
+      output.props.onKeyDown({which: 13, target: {value: 'Use Redux'}});
+      expect(props.onSave).toHaveBeenCalledWith('Use Redux');
+    });
 
-    it('should reset state on handleSubmit if newTodo', async(inject([], () => {
-      tcb
-        .createAsync(TodoTextInput)
-        .then(fixture => {
-          const TodoTextInputCmp = fixture.componentInstance;
-          TodoTextInputCmp.newTodo = true;
-          const input = fixture.nativeElement.querySelector('input');
-          expect(input).not.toBeNull();
-          input.value = 'Use ngrx/store';
-          spyOn(TodoTextInputCmp.onSave, 'emit').and.callThrough();
-          TodoTextInputCmp.handleSubmit({keyCode: 13});
-          fixture.detectChanges();
-          expect(input.value).toBe('');
-        });
-    })));
+    it('should reset state on return key press if newTodo', () => {
+      const {output, renderer} = setup({newTodo: true});
+      output.props.onKeyDown({which: 13, target: {value: 'Use Redux'}});
+      const updated = renderer.getRenderOutput();
+      expect(updated.props.value).toEqual('');
+    });
 
-    it('should call onSave on handleBlur', async(inject([], () => {
-      tcb
-        .createAsync(TodoTextInput)
-        .then(fixture => {
-          fixture.detectChanges();
-          const TodoTextInputCmp = fixture.componentInstance;
-          TodoTextInputCmp.newTodo = false;
-          TodoTextInputCmp.text = 'Use ngrx/store';
-          spyOn(TodoTextInputCmp.onSave, 'emit').and.callThrough();
-          TodoTextInputCmp.handleBlur();
-          expect(TodoTextInputCmp.onSave.emit).toHaveBeenCalledWith('Use ngrx/store');
-        });
-    })));
+    it('should call onSave on blur', () => {
+      const {output, props} = setup();
+      output.props.onBlur({target: {value: 'Use Redux'}});
+      expect(props.onSave).toHaveBeenCalledWith('Use Redux');
+    });
+
+    it('shouldnt call onSave on blur if newTodo', () => {
+      const {output, props} = setup({newTodo: true});
+      output.props.onBlur({target: {value: 'Use Redux'}});
+      expect(props.onSave.calls.count()).toBe(0);
+    });
   });
 });
